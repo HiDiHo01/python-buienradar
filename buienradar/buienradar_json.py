@@ -1,9 +1,9 @@
 """Buienradar library to get parsed weather data from buienradar.nl."""
 import json
 import logging
-from datetime import datetime  # , timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-import pytz
 import requests
 from vincenty import vincenty
 
@@ -67,7 +67,7 @@ from buienradar.urls import JSON_FEED_URL, json_precipitation_forecast_url
 # "2019-02-03T19:20:00",
 __DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 __TIMEZONE = 'Europe/Amsterdam'
-__PYTZ_TIMEZONE = pytz.timezone(__TIMEZONE)
+__ZI_TIMEZONE = ZoneInfo(__TIMEZONE)
 
 __ACTUAL = "actual"
 __STATIONMEASUREMENTS = "stationmeasurements"
@@ -125,17 +125,34 @@ def __to_float1(val):
     """Convert val into float with 1 decimal."""
     return __to_float(val, 1)
 
+def __to_localdatetime(val: str | None) -> datetime | None:
+    """
+    Convert an ISO-like timestamp string into a timezone-aware
+    datetime in Europe/Amsterdam.
 
-def __to_localdatetime(val):
-    """Convert val into a local datetime for tz Europe/Amsterdam."""
-    try:
-        #  "timestamp": "2019-02-03T19:20:00",
-        dt = datetime.strptime(val, __DATE_FORMAT)
-        dt = __PYTZ_TIMEZONE.localize(dt)
-        return dt
-    except (AttributeError, ValueError, TypeError):
+    Expected format:
+        YYYY-MM-DDTHH:MM:SS
+
+    Example:
+        "2019-02-03T19:20:00"
+
+    Args:
+        val: Timestamp string.
+
+    Returns:
+        Timezone-aware datetime in Europe/Amsterdam,
+        or None if parsing fails.
+    """
+    if not isinstance(val, str) or not val:
         return None
 
+    try:
+        naive_dt = datetime.strptime(val, __DATE_FORMAT)
+    except ValueError:
+        return None
+
+    # Attach timezone directly (zoneinfo handles DST correctly)
+    return naive_dt.replace(tzinfo=__ZI_TIMEZONE)
 
 def __getBarFC(pressure):
     """Parse the pressure and return FC (numerical)."""
