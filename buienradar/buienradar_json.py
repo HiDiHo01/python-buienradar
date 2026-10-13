@@ -127,32 +127,39 @@ def __to_float1(val):
 
 def __to_localdatetime(val: str | None) -> datetime | None:
     """
-    Convert an ISO-like timestamp string into a timezone-aware
-    datetime in Europe/Amsterdam.
+    Convert a station or forecast timestamp to a timezone-aware datetime.
 
-    Expected format:
-        YYYY-MM-DDTHH:MM:SS
-
-    Example:
-        "2019-02-03T19:20:00"
+    Legacy timestamps without a suffix are interpreted as Europe/Amsterdam
+    local time. The feed's trailing Z format is also interpreted as local
+    time for compatibility with its observed station timestamps. Explicit
+    numeric UTC offsets are preserved.
 
     Args:
-        val: Timestamp string.
+        val: ISO-like timestamp string.
 
     Returns:
-        Timezone-aware datetime in Europe/Amsterdam,
-        or None if parsing fails.
+        A timezone-aware datetime, or None if parsing fails.
     """
     if not isinstance(val, str) or not val:
         return None
 
+    # The feed currently emits Z on station timestamps, but these values
+    # represent Amsterdam local time rather than UTC. Strip only that suffix
+    # and keep support for the original suffix-free format.
+    is_local_z_timestamp = val.endswith("Z")
+    timestamp = val[:-1] if is_local_z_timestamp else val
+
     try:
-        naive_dt = datetime.strptime(val, __DATE_FORMAT)
+        parsed_dt = datetime.fromisoformat(timestamp)
     except ValueError:
         return None
 
-    # Attach timezone directly (zoneinfo handles DST correctly)
-    return naive_dt.replace(tzinfo=__ZI_TIMEZONE)
+    if parsed_dt.tzinfo is None:
+        # Preserve the original behavior for naive timestamps and the
+        # observed Buienradar Z-suffixed station timestamps.
+        return parsed_dt.replace(tzinfo=__ZI_TIMEZONE)
+
+    return parsed_dt
 
 def __getBarFC(pressure):
     """Parse the pressure and return FC (numerical)."""
