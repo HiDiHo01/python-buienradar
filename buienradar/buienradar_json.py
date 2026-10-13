@@ -146,8 +146,7 @@ def __to_localdatetime(val: str | None) -> datetime | None:
     # The feed currently emits Z on station timestamps, but these values
     # represent Amsterdam local time rather than UTC. Strip only that suffix
     # and keep support for the original suffix-free format.
-    is_local_z_timestamp = val.endswith("Z")
-    timestamp = val[:-1] if is_local_z_timestamp else val
+    timestamp = val[:-1] if val.endswith("Z") else val
 
     try:
         parsed_dt = datetime.fromisoformat(timestamp)
