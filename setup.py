@@ -6,7 +6,7 @@ LONG_DESCRIPTION = (BASE_DIR / "README.rst").read_text(encoding="utf-8")
 
 setup(
     name="buienradar",
-    version="1.0.9",
+    version="1.0.10",
     description="Library and CLI tools for interacting with buienradar.",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/x-rst",
