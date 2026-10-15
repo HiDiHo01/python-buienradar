@@ -1,6 +1,6 @@
 """Tests for Buienradar timestamp parsing."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from buienradar.buienradar_json import __to_localdatetime
@@ -10,8 +10,8 @@ def test_utc_designator_is_parsed_as_utc():
     """Parse an ISO 8601 Z suffix as UTC rather than local time."""
     parsed_dt = __to_localdatetime("2026-10-15T12:30:00Z")
 
-    assert parsed_dt == datetime(2026, 10, 15, 12, 30, tzinfo=UTC)
-    assert parsed_dt.tzinfo is UTC
+    assert parsed_dt == datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc)
+    assert parsed_dt.utcoffset().total_seconds() == 0
 
 
 def test_explicit_offset_is_preserved():
