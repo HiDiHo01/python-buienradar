@@ -130,9 +130,8 @@ def __to_localdatetime(val: str | None) -> datetime | None:
     Convert a station or forecast timestamp to a timezone-aware datetime.
 
     Legacy timestamps without a suffix are interpreted as Europe/Amsterdam
-    local time. The feed's trailing Z format is also interpreted as local
-    time for compatibility with its observed station timestamps. Explicit
-    numeric UTC offsets are preserved.
+    local time. ISO 8601 UTC designators (Z) and explicit numeric UTC offsets
+    are parsed as timezone-aware timestamps and retain their stated timezone.
 
     Args:
         val: ISO-like timestamp string.
@@ -143,13 +142,11 @@ def __to_localdatetime(val: str | None) -> datetime | None:
     if not isinstance(val, str) or not val:
         return None
 
-    # The feed currently emits Z on station timestamps, but these values
-    # represent Amsterdam local time rather than UTC. Strip only that suffix
-    # and keep support for the original suffix-free format.
-    timestamp = val[:-1] if val.endswith("Z") else val
-
+    # datetime.fromisoformat() understands the ISO 8601 UTC designator
+    # on supported Python versions. Do not strip the trailing Z: it denotes
+    # UTC, not Europe/Amsterdam local time.
     try:
-        parsed_dt = datetime.fromisoformat(timestamp)
+        parsed_dt = datetime.fromisoformat(val)
     except ValueError:
         return None
 
