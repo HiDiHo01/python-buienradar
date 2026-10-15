@@ -142,19 +142,23 @@ def __to_localdatetime(val: str | None) -> datetime | None:
     if not isinstance(val, str) or not val:
         return None
 
-    # datetime.fromisoformat() understands the ISO 8601 UTC designator
-    # on supported Python versions. Do not strip the trailing Z: it denotes
-    # UTC, not Europe/Amsterdam local time.
+    # Buienradar's station timestamp uses a trailing Z while its clock
+    # value represents Europe/Amsterdam local time. Interpret that suffix
+    # as a feed quirk and attach the correct Amsterdam offset for the date
+    # (including daylight-saving time), rather than treating the clock value
+    # as UTC and shifting the displayed time.
+    has_z_suffix = val.endswith("Z")
+    timestamp = val[:-1] if has_z_suffix else val
+
     try:
-        parsed_dt = datetime.fromisoformat(val)
+        parsed_dt = datetime.fromisoformat(timestamp)
     except ValueError:
         return None
 
-    if parsed_dt.tzinfo is None:
-        # Preserve the original behavior for naive timestamps and the
-        # observed Buienradar Z-suffixed station timestamps.
+    if has_z_suffix or parsed_dt.tzinfo is None:
         return parsed_dt.replace(tzinfo=__ZI_TIMEZONE)
 
+    # Preserve explicit numeric UTC offsets supplied by the feed.
     return parsed_dt
 
 def __getBarFC(pressure):
